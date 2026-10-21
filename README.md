@@ -9,7 +9,7 @@ Registro de gastos del hogar con **arquitectura desacoplada**: un frontend en **
 | | |
 |---|---|
 | **App** | https://cuentasclaras.3rlabs.cl — botón **"Entrar como demo"** |
-| **API docs (Swagger)** | https://api.cuentasclaras.3rlabs.cl/api/docs |
+| **API docs (Swagger)** | https://api-cuentasclaras.3rlabs.cl/api/docs |
 | **Cuenta demo** | `demo` / `demo1234` |
 
 <!-- Agrega una captura: docs/screenshot.png -->
@@ -137,7 +137,7 @@ Modelo híbrido, sin costo: el frontend en **Vercel** y la API en el **servidor 
 | Pieza | Dónde | Dominio |
 |---|---|---|
 | Frontend | Vercel | `cuentasclaras.3rlabs.cl` |
-| API + SQLite | Servidor 3R Labs (Docker + túnel de Cloudflare) | `api.cuentasclaras.3rlabs.cl` |
+| API + SQLite | Servidor 3R Labs (Docker + túnel de Cloudflare) | `api-cuentasclaras.3rlabs.cl` |
 
 Guía completa (instalación, túnel, DNS, pruebas, respaldos y problemas comunes): [docs/DEPLOY-3RLABS.md](docs/DEPLOY-3RLABS.md).
 
@@ -150,7 +150,7 @@ No hay registro abierto: las cuentas se crean desde el admin de Django. Cada usu
 docker compose -f docker-compose.prod.yml exec api python manage.py createsuperuser
 ```
 
-Luego entra a `https://api.cuentasclaras.3rlabs.cl/admin/` y crea el resto de los usuarios en *Users → Add*. Cada uno inicia sesión en `cuentasclaras.3rlabs.cl` con su usuario y contraseña.
+Luego entra a `https://api-cuentasclaras.3rlabs.cl/admin/` y crea el resto de los usuarios en *Users → Add*. Cada uno inicia sesión en `cuentasclaras.3rlabs.cl` con su usuario y contraseña.
 
 ## Estructura
 

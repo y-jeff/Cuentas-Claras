@@ -16,15 +16,15 @@ Ninguna de las dos partes tiene costo.
 | Pieza | Dónde | Dominio |
 |---|---|---|
 | Frontend (Next.js 16) | Vercel (plan Hobby) | `https://cuentasclaras.3rlabs.cl` |
-| API (Django 5.2 + Django Ninja) + SQLite | Servidor de 3R Labs, Docker, publicado con el túnel de Cloudflare | `https://api.cuentasclaras.3rlabs.cl` |
+| API (Django 5.2 + Django Ninja) + SQLite | Servidor de 3R Labs, Docker, publicado con el túnel de Cloudflare | `https://api-cuentasclaras.3rlabs.cl` |
 
 ```
 Navegador ──► cuentasclaras.3rlabs.cl (Vercel)
-                 └─ /api/*  ── proxy ──►  api.cuentasclaras.3rlabs.cl ──► Cloudflare ──► túnel ──► 127.0.0.1:8000 (API) ──► ./data/db.sqlite3
+                 └─ /api/*  ── proxy ──►  api-cuentasclaras.3rlabs.cl ──► Cloudflare ──► túnel ──► 127.0.0.1:8000 (API) ──► ./data/db.sqlite3
 ```
 
 - El navegador **solo habla con `cuentasclaras.3rlabs.cl`**. Vercel reenvía `/api/*` a la API, así que la cookie de sesión es del dominio de la app: no hay CORS ni cookies de terceros.
-- Desde el navegador, `api.cuentasclaras.3rlabs.cl` solo se usa para Swagger (`/api/docs`) y el admin (`/admin/`).
+- Desde el navegador, `api-cuentasclaras.3rlabs.cl` solo se usa para Swagger (`/api/docs`) y el admin (`/admin/`).
 - **Carga en el servidor:** un contenedor de Python con límite de 256 MB de RAM (consume unos 80–100 MB). El build de la imagen solo instala dependencias de Python, sin compilar el frontend.
 
 ---
@@ -71,7 +71,7 @@ curl -i http://127.0.0.1:8000/api/auth/me        # 401 (sin sesión)
 |---|---|---|
 | `SECRET_KEY` | `openssl rand -hex 32` | Firma sesiones y CSRF. No compartirla. |
 | `WEB_DOMAIN` | `cuentasclaras.3rlabs.cl` | Origen permitido para `POST/PUT/DELETE`. |
-| `API_DOMAIN` | `api.cuentasclaras.3rlabs.cl` | Dominio que acepta la API (`ALLOWED_HOSTS`). |
+| `API_DOMAIN` | `api-cuentasclaras.3rlabs.cl` | Dominio que acepta la API (`ALLOWED_HOSTS`). |
 | `API_PORT` | `8000` | Puerto local, solo en `127.0.0.1`. |
 
 ---
@@ -82,31 +82,31 @@ Agrega **un** hostname al túnel existente, **sin tocar las reglas de `hogar.3rl
 
 **Túnel gestionado desde el panel** (cloudflared corre con `--token`):
 Cloudflare Zero Trust → Networks → Tunnels → el túnel → *Public Hostname* → **Add**:
-`api.cuentasclaras.3rlabs.cl` → `HTTP` → `127.0.0.1:8000`. Cloudflare crea el registro DNS solo.
+`api-cuentasclaras.3rlabs.cl` → `HTTP` → `127.0.0.1:8000`. Cloudflare crea el registro DNS solo.
 
 **Túnel gestionado por archivo** (`config.yml`): respalda el archivo y agrega la regla **antes** de la regla final `http_status:404`.
 
 ```yaml
 ingress:
   # ... reglas existentes (hogar.3rlabs.cl) ...
-  - hostname: api.cuentasclaras.3rlabs.cl
+  - hostname: api-cuentasclaras.3rlabs.cl
     service: http://127.0.0.1:8000
   - service: http_status:404
 ```
 
 ```bash
 cloudflared tunnel ingress validate
-cloudflared tunnel route dns <TUNEL> api.cuentasclaras.3rlabs.cl   # requiere cert.pem
+cloudflared tunnel route dns <TUNEL> api-cuentasclaras.3rlabs.cl   # requiere cert.pem
 sudo systemctl restart cloudflared
 ```
 
-- Si no hay `cert.pem`, crea el DNS en el panel: `CNAME api.cuentasclaras → <ID_DEL_TUNEL>.cfargotunnel.com`, con proxy activado (nube naranja).
+- Si no hay `cert.pem`, crea el DNS en el panel: `CNAME api-cuentasclaras → <ID_DEL_TUNEL>.cfargotunnel.com`, con proxy activado (nube naranja).
 - Si cloudflared corre **dentro de Docker**, `127.0.0.1` no es el servidor. Usa `host.docker.internal:8000`, o conecta cloudflared a la red `cuentas-claras_default` y apunta a `api:8000`.
 
 Comprobar:
 
 ```bash
-curl -I https://api.cuentasclaras.3rlabs.cl/api/docs     # 200
+curl -I https://api-cuentasclaras.3rlabs.cl/api/docs     # 200
 ```
 
 ---
@@ -119,7 +119,7 @@ curl -I https://api.cuentasclaras.3rlabs.cl/api/docs     # 200
 
    | Variable | Valor |
    |---|---|
-   | `BACKEND_URL` | `https://api.cuentasclaras.3rlabs.cl` |
+   | `BACKEND_URL` | `https://api-cuentasclaras.3rlabs.cl` |
 
    `BACKEND_URL` se lee **durante el build**. Si se cambia, hay que hacer **Redeploy**.
 4. **Deploy.**
@@ -134,13 +134,13 @@ curl -I https://api.cuentasclaras.3rlabs.cl/api/docs     # 200
 
 | # | Prueba | Resultado esperado |
 |---|---|---|
-| 1 | `https://api.cuentasclaras.3rlabs.cl/api/docs` | Swagger con el título **"Cuentas Claras API"**. |
+| 1 | `https://api-cuentasclaras.3rlabs.cl/api/docs` | Swagger con el título **"Cuentas Claras API"**. |
 | 2 | `https://cuentasclaras.3rlabs.cl` | Redirige a `/login` y muestra "Cuentas Claras". |
 | 3 | **"Entrar como demo"** | Dashboard con unos 80 gastos de ejemplo. |
 | 4 | Crear, editar y eliminar un gasto | Los cambios siguen ahí al recargar. |
 | 5 | Crear un gasto con **fecha futura** | Aparece un error bajo el campo fecha (lo valida la API). |
 | 6 | Cerrar sesión | Vuelve a `/login`; `/dashboard` ya no se puede abrir. |
-| 7 | `https://api.cuentasclaras.3rlabs.cl/admin/` | Login del admin de Django, con estilos. |
+| 7 | `https://api-cuentasclaras.3rlabs.cl/admin/` | Login del admin de Django, con estilos. |
 | 8 | `https://hogar.3rlabs.cl` | Sigue funcionando igual que antes. |
 
 ```bash
@@ -180,10 +180,10 @@ No hay registro abierto. Cada usuario ve **solo sus propios gastos**.
 docker compose -f docker-compose.prod.yml exec api python manage.py createsuperuser
 ```
 
-Luego `https://api.cuentasclaras.3rlabs.cl/admin/` → **Users → Add user** para cada persona (mínimo 8 caracteres). El *First name* es el nombre que aparece en el header. La sesión dura 8 horas.
+Luego `https://api-cuentasclaras.3rlabs.cl/admin/` → **Users → Add user** para cada persona (mínimo 8 caracteres). El *First name* es el nombre que aparece en el header. La sesión dura 8 horas.
 
 - La cuenta `demo` / `demo1234` es pública y se reinicia en cada arranque: no guardar datos reales en ella.
-- **Opcional:** proteger el admin con **Cloudflare Access**. Crea una aplicación para `api.cuentasclaras.3rlabs.cl` con **ruta `/admin`**, permitida solo a los correos de la familia. **No protejas todo el dominio de la API**: Vercel necesita llegar a `/api/*` sin login.
+- **Opcional:** proteger el admin con **Cloudflare Access**. Crea una aplicación para `api-cuentasclaras.3rlabs.cl` con **ruta `/admin`**, permitida solo a los correos de la familia. **No protejas todo el dominio de la API**: Vercel necesita llegar a `/api/*` sin login.
 
 ---
 
@@ -207,7 +207,7 @@ docker image prune -f
 |---|---|---|
 | `400 Bad Request` en la API | El dominio no está en `ALLOWED_HOSTS`. | Revisa `API_DOMAIN` en `.env` y vuelve a ejecutar `up -d`. |
 | `403` al iniciar sesión o al guardar | El origen no está en `CSRF_TRUSTED_ORIGINS`. | Revisa `WEB_DOMAIN` en `.env`. |
-| El login falla con 5xx o error de red, pero `/api/docs` funciona por el navegador | Cloudflare bloquea las requests de Vercel (*Bot Fight Mode*, reglas WAF o Access sobre todo el dominio). | En Cloudflare → Security → Events, busca requests bloqueadas hacia `api.cuentasclaras`. Desactiva lo que las bloquea, o limita Access a `/admin`. |
+| El login falla con 5xx o error de red, pero `/api/docs` funciona por el navegador | Cloudflare bloquea las requests de Vercel (*Bot Fight Mode*, reglas WAF o Access sobre todo el dominio). | En Cloudflare → Security → Events, busca requests bloqueadas hacia `api-cuentasclaras`. Desactiva lo que las bloquea, o limita Access a `/admin`. |
 | `502` / `Bad gateway` en Cloudflare | El túnel no llega al puerto. | `docker compose -f docker-compose.prod.yml ps`, `curl 127.0.0.1:8000/api/docs` y revisa la regla del túnel. |
 | Vercel no emite el certificado | El CNAME de `cuentasclaras` tiene el proxy activado. | Ponlo en "DNS only". |
 | El login no queda guardado | Se entró por `http://`. | Usar siempre `https://`. |
@@ -221,8 +221,8 @@ Logs: `docker compose -f docker-compose.prod.yml logs -f api`
 ## 11. Checklist final
 
 - [ ] La API está en estado `healthy` en el servidor y `data/db.sqlite3` existe.
-- [ ] El túnel publica `api.cuentasclaras.3rlabs.cl` con HTTPS.
-- [ ] Vercel tiene root `frontend` y `BACKEND_URL=https://api.cuentasclaras.3rlabs.cl`.
+- [ ] El túnel publica `api-cuentasclaras.3rlabs.cl` con HTTPS.
+- [ ] Vercel tiene root `frontend` y `BACKEND_URL=https://api-cuentasclaras.3rlabs.cl`.
 - [ ] El dominio `cuentasclaras.3rlabs.cl` está verificado en Vercel, con el CNAME en "DNS only".
 - [ ] Las 8 pruebas de la sección 6 pasan.
 - [ ] El cron de respaldo está configurado y ya existe un primer respaldo manual.

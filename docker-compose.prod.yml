@@ -12,9 +12,9 @@ services:
       DEBUG: "false"
       SECRET_KEY: ${SECRET_KEY:?Define SECRET_KEY en .env}
       # localhost sirve para probar y para el healthcheck desde el propio servidor.
-      ALLOWED_HOSTS: ${API_DOMAIN:-api.cuentasclaras.3rlabs.cl},localhost,127.0.0.1
+      ALLOWED_HOSTS: ${API_DOMAIN:-api-cuentasclaras.3rlabs.cl},localhost,127.0.0.1
       # El frontend (Vercel) reenvía las requests del navegador, así que llega su Origin. El de la API es para /admin/.
-      CSRF_TRUSTED_ORIGINS: https://${WEB_DOMAIN:-cuentasclaras.3rlabs.cl},https://${API_DOMAIN:-api.cuentasclaras.3rlabs.cl}
+      CSRF_TRUSTED_ORIGINS: https://${WEB_DOMAIN:-cuentasclaras.3rlabs.cl},https://${API_DOMAIN:-api-cuentasclaras.3rlabs.cl}
       # SQLite en ./data del servidor: un solo archivo, fácil de respaldar.
       DATABASE_URL: sqlite:////data/db.sqlite3
     # seed solo reinicia la cuenta demo; no toca a los demás usuarios.
