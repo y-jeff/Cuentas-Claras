@@ -22,11 +22,12 @@ services:
         fromDatabase:
           name: cuentas-claras-db
           property: connectionString
+      # Dominio propio de 3R Labs + el de Render (lo usa Render internamente y sirve de respaldo).
       - key: ALLOWED_HOSTS
-        value: cuentas-claras-api.onrender.com
+        value: api.cuentasclaras.3rlabs.cl,cuentas-claras-api.onrender.com
       # El frontend hace de proxy, así que su origen debe estar aquí. El de la API es para /admin/.
       - key: CSRF_TRUSTED_ORIGINS
-        value: https://cuentasclaras.3rlabs.cl,https://cuentas-claras-api.onrender.com
+        value: https://cuentasclaras.3rlabs.cl,https://api.cuentasclaras.3rlabs.cl,https://cuentas-claras-api.onrender.com
 
 databases:
   - name: cuentas-claras-db

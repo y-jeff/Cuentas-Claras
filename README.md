@@ -9,7 +9,7 @@ Registro de gastos del hogar con **arquitectura desacoplada**: un frontend en **
 | | |
 |---|---|
 | **App** | https://cuentasclaras.3rlabs.cl — botón **"Entrar como demo"** |
-| **API docs (Swagger)** | https://cuentas-claras-api.onrender.com/api/docs |
+| **API docs (Swagger)** | https://api.cuentasclaras.3rlabs.cl/api/docs |
 | **Cuenta demo** | `demo` / `demo1234` |
 
 <!-- Agrega una captura: docs/screenshot.png -->
@@ -132,23 +132,27 @@ cd frontend && npm run lint && npm run typecheck && npm run build
 
 ## Deploy (3rlabs)
 
+Guía completa paso a paso: [docs/DEPLOY-3RLABS.md](docs/DEPLOY-3RLABS.md).
+
 | Pieza | Dónde | Dominio |
 |---|---|---|
 | Frontend | Vercel | `cuentasclaras.3rlabs.cl` |
-| Backend + Postgres | Render (blueprint [`render.yaml`](render.yaml)) | `cuentas-claras-api.onrender.com` |
+| Backend + Postgres | Render (blueprint [`render.yaml`](render.yaml)) | `api.cuentasclaras.3rlabs.cl` |
 
 **1. Backend (Render)**
 - *New → Blueprint* y elige este repo: [`render.yaml`](render.yaml) crea la API (Docker, `backend/`) y la base Postgres, y genera `SECRET_KEY`.
 - Cada deploy corre `migrate` y `seed`. `seed` solo reinicia la cuenta `demo`; los gastos de los demás usuarios no se tocan.
-- Si Render asigna otra URL (porque el nombre ya está tomado), actualiza `ALLOWED_HOSTS` y `CSRF_TRUSTED_ORIGINS` en el servicio.
+- *Settings → Custom Domains* → agrega `api.cuentasclaras.3rlabs.cl`.
+- Si Render asigna otra URL `.onrender.com` (porque el nombre ya está tomado), actualiza `ALLOWED_HOSTS` y `CSRF_TRUSTED_ORIGINS` en el servicio.
 
 **2. Frontend (Vercel)**
 - Root directory: `frontend`
-- Variable: `BACKEND_URL=https://cuentas-claras-api.onrender.com` (se lee en el build para el proxy `/api/*`; si la cambias, vuelve a desplegar).
+- Variable: `BACKEND_URL=https://api.cuentasclaras.3rlabs.cl` (se lee en el build para el proxy `/api/*`; si la cambias, vuelve a desplegar).
 - *Settings → Domains* → agrega `cuentasclaras.3rlabs.cl`.
 
 **3. DNS (zona de 3rlabs.cl)**
 - `CNAME cuentasclaras → cname.vercel-dns.com` (Vercel muestra el valor exacto al agregar el dominio).
+- `CNAME api.cuentasclaras → cuentas-claras-api.onrender.com`
 
 > El plan gratuito de Render suspende el servicio tras 15 minutos sin uso (la primera petición tarda ~50 s) y su Postgres gratuito expira a los 30 días. Para uso diario, el blueprint usa planes pagados.
 
@@ -161,7 +165,7 @@ No hay registro abierto: las cuentas se crean desde el admin de Django. Cada usu
 python manage.py createsuperuser
 ```
 
-Luego entra a `https://cuentas-claras-api.onrender.com/admin/` y crea el resto de los usuarios en *Users → Add*. Cada uno inicia sesión en `cuentasclaras.3rlabs.cl` con su usuario y contraseña.
+Luego entra a `https://api.cuentasclaras.3rlabs.cl/admin/` y crea el resto de los usuarios en *Users → Add*. Cada uno inicia sesión en `cuentasclaras.3rlabs.cl` con su usuario y contraseña.
 
 ## Estructura
 
