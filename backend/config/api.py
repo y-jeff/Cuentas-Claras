@@ -10,9 +10,12 @@ from gastos.auth_api import router as auth_router
 logger = logging.getLogger(__name__)
 
 api = NinjaAPI(
-    title="Gastos API",
+    title="Cuentas Claras API",
     version="1.0.0",
-    description="API REST del registro de gastos. Autenticación por sesión (cookie HttpOnly) + CSRF.",
+    description=(
+        "API REST de Cuentas Claras, registro de gastos del hogar. "
+        "Autenticación por sesión (cookie HttpOnly) + CSRF."
+    ),
 )
 
 api.add_router("/auth", auth_router)

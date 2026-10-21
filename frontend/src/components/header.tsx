@@ -25,7 +25,7 @@ export function Header() {
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Wallet className="size-4" aria-hidden />
           </span>
-          Gastos
+          Cuentas Claras
         </div>
         <div className="flex items-center gap-3">
           {usuario ? (

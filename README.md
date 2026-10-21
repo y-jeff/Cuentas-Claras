@@ -1,13 +1,15 @@
-# Gastos — Next.js + Django API
+# Cuentas Claras — Next.js + Django API
 
-[![CI](https://github.com/y-jeff/FullStack-Developer/actions/workflows/ci.yml/badge.svg)](https://github.com/y-jeff/FullStack-Developer/actions/workflows/ci.yml)
+[![CI](https://github.com/y-jeff/Cuentas-Claras/actions/workflows/ci.yml/badge.svg)](https://github.com/y-jeff/Cuentas-Claras/actions/workflows/ci.yml)
 
-Registro de gastos personales con **arquitectura desacoplada**: un frontend en **Next.js 16 + TypeScript** que consume una **API REST en Django Ninja**, conectados por un contrato OpenAPI tipado de punta a punta.
+> *Cuentas claras conservan la amistad.* Un proyecto de [3rlabs](https://3rlabs.cl).
+
+Registro de gastos del hogar con **arquitectura desacoplada**: un frontend en **Next.js 16 + TypeScript** que consume una **API REST en Django Ninja**, conectados por un contrato OpenAPI tipado de punta a punta.
 
 | | |
 |---|---|
-| **Demo** | https://TU-APP.vercel.app — botón **"Entrar como demo"** |
-| **API docs (Swagger)** | https://TU-API.onrender.com/api/docs |
+| **App** | https://cuentasclaras.3rlabs.cl — botón **"Entrar como demo"** |
+| **API docs (Swagger)** | https://cuentas-claras-api.onrender.com/api/docs |
 | **Cuenta demo** | `demo` / `demo1234` |
 
 <!-- Agrega una captura: docs/screenshot.png -->
@@ -128,19 +130,38 @@ cd backend && pytest                                         # 16 tests: auth, C
 cd frontend && npm run lint && npm run typecheck && npm run build
 ```
 
-## Deploy
+## Deploy (3rlabs)
 
-**Backend (Render, Web Service con Docker)**
-- Root directory: `backend`
-- Variables: `SECRET_KEY`, `DATABASE_URL` (Postgres de Render o Neon), `ALLOWED_HOSTS=tu-api.onrender.com`, `CSRF_TRUSTED_ORIGINS=https://tu-app.vercel.app`
-- Para que la demo se reinicie en cada deploy, usa este comando de inicio:
-  `sh -c "python manage.py migrate --noinput && python manage.py seed && gunicorn config.wsgi --bind 0.0.0.0:$PORT"`
+| Pieza | Dónde | Dominio |
+|---|---|---|
+| Frontend | Vercel | `cuentasclaras.3rlabs.cl` |
+| Backend + Postgres | Render (blueprint [`render.yaml`](render.yaml)) | `cuentas-claras-api.onrender.com` |
 
-**Frontend (Vercel)**
+**1. Backend (Render)**
+- *New → Blueprint* y elige este repo: [`render.yaml`](render.yaml) crea la API (Docker, `backend/`) y la base Postgres, y genera `SECRET_KEY`.
+- Cada deploy corre `migrate` y `seed`. `seed` solo reinicia la cuenta `demo`; los gastos de los demás usuarios no se tocan.
+- Si Render asigna otra URL (porque el nombre ya está tomado), actualiza `ALLOWED_HOSTS` y `CSRF_TRUSTED_ORIGINS` en el servicio.
+
+**2. Frontend (Vercel)**
 - Root directory: `frontend`
-- Variable: `BACKEND_URL=https://tu-api.onrender.com` (se usa en build para el proxy `/api/*`)
+- Variable: `BACKEND_URL=https://cuentas-claras-api.onrender.com` (se lee en el build para el proxy `/api/*`; si la cambias, vuelve a desplegar).
+- *Settings → Domains* → agrega `cuentasclaras.3rlabs.cl`.
 
-> El plan gratuito de Render suspende el servicio tras 15 minutos sin uso, y la primera petición tarda unos 50 segundos. Para una demo de portafolio conviene un plan pagado o un servicio que se mantenga activo.
+**3. DNS (zona de 3rlabs.cl)**
+- `CNAME cuentasclaras → cname.vercel-dns.com` (Vercel muestra el valor exacto al agregar el dominio).
+
+> El plan gratuito de Render suspende el servicio tras 15 minutos sin uso (la primera petición tarda ~50 s) y su Postgres gratuito expira a los 30 días. Para uso diario, el blueprint usa planes pagados.
+
+## Uso real (cuentas de la familia)
+
+No hay registro abierto: las cuentas se crean desde el admin de Django. Cada usuario ve **solo sus propios gastos**.
+
+```bash
+# En Render: servicio cuentas-claras-api → Shell
+python manage.py createsuperuser
+```
+
+Luego entra a `https://cuentas-claras-api.onrender.com/admin/` y crea el resto de los usuarios en *Users → Add*. Cada uno inicia sesión en `cuentasclaras.3rlabs.cl` con su usuario y contraseña.
 
 ## Estructura
 

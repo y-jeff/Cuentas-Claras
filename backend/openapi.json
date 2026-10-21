@@ -1,9 +1,9 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Gastos API",
+    "title": "Cuentas Claras API",
     "version": "1.0.0",
-    "description": "API REST del registro de gastos. Autenticación por sesión (cookie HttpOnly) + CSRF."
+    "description": "API REST de Cuentas Claras, registro de gastos del hogar. Autenticación por sesión (cookie HttpOnly) + CSRF."
   },
   "paths": {
     "/api/auth/login": {

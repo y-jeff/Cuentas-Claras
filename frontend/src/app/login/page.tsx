@@ -62,7 +62,7 @@ export default function LoginPage() {
           <span className="mb-3 flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <Wallet className="size-6" aria-hidden />
           </span>
-          <h1 className="text-2xl font-semibold">Registro de gastos</h1>
+          <h1 className="text-2xl font-semibold">Cuentas Claras</h1>
           <p className="mt-1 text-sm text-muted">Inicia sesión para ver tu dashboard.</p>
         </div>
 

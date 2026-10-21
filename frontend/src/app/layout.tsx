@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: { default: "Gastos", template: "%s · Gastos" },
-  description: "Registro de gastos personales — Next.js + Django Ninja.",
+  title: { default: "Cuentas Claras", template: "%s · Cuentas Claras" },
+  description: "Cuentas Claras: registro de gastos del hogar — Next.js + Django Ninja.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
