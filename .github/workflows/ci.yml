@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend (pytest + Postgres)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: gastos
+          POSTGRES_USER: gastos
+          POSTGRES_PASSWORD: gastos
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U gastos -d gastos"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://gastos:gastos@localhost:5432/gastos
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - run: pip install -r requirements.txt
+      - name: Migraciones al día
+        run: DEBUG=true python manage.py makemigrations --check --dry-run
+      - run: pytest -q
+
+  frontend:
+    name: Frontend (lint + tipos + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+
+  contrato:
+    name: Contrato API ↔ tipos TS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Exportar OpenAPI desde Django
+        working-directory: backend
+        run: |
+          pip install -r requirements.txt
+          DEBUG=true python manage.py export_openapi_schema --api config.api.api --output openapi.json --indent 2
+      - name: Regenerar tipos TypeScript
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run generate:types
+      - name: Verificar que el contrato commiteado está al día
+        run: git diff --exit-code backend/openapi.json frontend/src/lib/api-types.ts
