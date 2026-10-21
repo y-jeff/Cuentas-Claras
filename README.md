@@ -12,7 +12,7 @@ Registro de gastos del hogar con **arquitectura desacoplada**: un frontend en **
 | **API docs (Swagger)** | https://api-cuentasclaras.3rlabs.cl/api/docs |
 | **Cuenta demo** | `demo` / `demo1234` |
 
-<!-- Agrega una captura: docs/screenshot.png -->
+![Dashboard de Cuentas Claras](docs/screenshot.png)
 
 ## Qué demuestra este proyecto
 
@@ -26,16 +26,27 @@ Registro de gastos del hogar con **arquitectura desacoplada**: un frontend en **
 - **Búsqueda en vivo con debounce** y paginación sin parpadeos (`keepPreviousData`).
 - **Tests** con pytest sobre Postgres real y **CI en GitHub Actions** (backend, frontend y contrato).
 - **`docker compose up`** levanta Postgres + API + frontend con datos de prueba.
+- **En producción con costo $0**: frontend en Vercel y API en un servidor propio detrás de un túnel de Cloudflare, sin puertos abiertos.
+- **Deploy continuo**: Vercel publica cada push, y el servidor se actualiza solo cuando el CI termina en verde ([`scripts/actualizar-servidor.sh`](scripts/actualizar-servidor.sh)).
 
 ## Arquitectura
 
 ```
- Navegador ──► Next.js (Vercel)                    Django Ninja (servidor 3R Labs) ──► SQLite / PostgreSQL
-               ├─ /login, /dashboard (React)
-               └─ /api/*  ── rewrite (proxy) ──►   /api/auth/*, /api/gastos/*
+ Navegador
+    │  https://cuentasclaras.3rlabs.cl
+    ▼
+ Next.js en Vercel ── /login, /dashboard (React)
+    │  /api/*  (rewrite → proxy)
+    ▼
+ Cloudflare ── https://api-cuentasclaras.3rlabs.cl
+    │  túnel (cloudflared), sin puertos abiertos
+    ▼
+ Servidor 3R Labs ── Docker: Django Ninja + Gunicorn ──► SQLite (./data/db.sqlite3)
 ```
 
 El navegador **solo habla con el dominio del frontend**. Next reenvía `/api/*` a Django mediante `rewrites`, así que la cookie de sesión es *first-party*: puede ser `HttpOnly` + `SameSite=Lax` sin configurar CORS ni cookies de terceros, que los navegadores bloquean cada vez más.
+
+La API se publica con un **túnel de Cloudflare**: el servidor no abre puertos a internet y el contenedor solo escucha en `127.0.0.1`. En producción usa SQLite (un archivo, respaldo trivial, unos 100 MB de RAM); en local y en el CI, PostgreSQL.
 
 **Flujo de autenticación**
 
@@ -49,10 +60,10 @@ El navegador **solo habla con el dominio del frontend**. Next reenvía `/api/*` 
 | Capa | Tecnologías |
 |---|---|
 | Frontend | Next.js 16 (App Router), React 19, TypeScript estricto, Tailwind CSS 4, TanStack Query, React Hook Form, Zod, Sonner |
-| Backend | Django 5.2 LTS, Django Ninja (Pydantic), PostgreSQL, Gunicorn, WhiteNoise |
+| Backend | Django 5.2 LTS, Django Ninja (Pydantic), Gunicorn, WhiteNoise, SQLite (producción) / PostgreSQL (local y CI) |
 | Contrato | OpenAPI 3 → `openapi-typescript` |
 | Calidad | pytest + pytest-django, ESLint, `tsc`, GitHub Actions |
-| Infra | Docker, docker compose, Vercel (frontend), servidor propio + túnel de Cloudflare (API) |
+| Infra | Docker, docker compose, Vercel (frontend), servidor propio + túnel de Cloudflare (API), cron de actualización y respaldo |
 
 ## Probarlo en local
 
@@ -130,14 +141,24 @@ cd backend && pytest                                         # 16 tests: auth, C
 cd frontend && npm run lint && npm run typecheck && npm run build
 ```
 
-## Deploy (3rlabs)
+## Producción (3R Labs)
 
-Modelo híbrido, sin costo: el frontend en **Vercel** y la API en el **servidor de 3R Labs**, publicada con un túnel de Cloudflare. La API corre en un solo contenedor con SQLite ([`docker-compose.prod.yml`](docker-compose.prod.yml)), con un límite de 256 MB de RAM.
+Modelo híbrido, sin costo: el frontend en **Vercel** y la API en el **servidor de 3R Labs**. La API corre en un solo contenedor con SQLite ([`docker-compose.prod.yml`](docker-compose.prod.yml)), con un límite de 256 MB de RAM.
 
 | Pieza | Dónde | Dominio |
 |---|---|---|
-| Frontend | Vercel | `cuentasclaras.3rlabs.cl` |
-| API + SQLite | Servidor 3R Labs (Docker + túnel de Cloudflare) | `api-cuentasclaras.3rlabs.cl` |
+| Frontend | Vercel (Hobby), root `frontend`, `BACKEND_URL=https://api-cuentasclaras.3rlabs.cl` | [cuentasclaras.3rlabs.cl](https://cuentasclaras.3rlabs.cl) |
+| API + SQLite | Servidor 3R Labs: Docker + túnel de Cloudflare | [api-cuentasclaras.3rlabs.cl](https://api-cuentasclaras.3rlabs.cl/api/docs) |
+
+| DNS (Cloudflare, zona `3rlabs.cl`) | Tipo | Destino | Proxy |
+|---|---|---|---|
+| `cuentasclaras` | CNAME | el valor que indica Vercel (`*.vercel-dns-017.com`) | DNS only |
+| `api-cuentasclaras` | Tunnel | túnel de cloudflared del servidor | Proxied |
+
+**Cómo se actualiza**
+- **Frontend:** Vercel despliega cada push a `main`.
+- **API:** un cron en el servidor ejecuta [`scripts/actualizar-servidor.sh`](scripts/actualizar-servidor.sh) cada 5 minutos. Si hay commits nuevos con **CI en verde**, trae los cambios y reconstruye el contenedor solo si cambió `backend/` o `docker-compose.prod.yml`.
+- **Respaldo:** copia diaria de SQLite en `data/backups/` (se guardan 14 días).
 
 Guía completa (instalación, túnel, DNS, pruebas, respaldos y problemas comunes): [docs/DEPLOY-3RLABS.md](docs/DEPLOY-3RLABS.md).
 
@@ -171,6 +192,13 @@ Luego entra a `https://api-cuentasclaras.3rlabs.cl/admin/` y crea el resto de lo
 │       ├── hooks/         # TanStack Query (queries, mutaciones optimistas), debounce
 │       ├── lib/           # cliente API, tipos generados, schemas Zod
 │       └── proxy.ts       # redirige a /login si no hay cookie de sesión
-├── docker-compose.yml
+├── docs/
+│   ├── DEPLOY-3RLABS.md   # guía de producción en 3R Labs
+│   └── screenshot.png
+├── scripts/
+│   └── actualizar-servidor.sh   # cron: actualiza la API cuando el CI pasa
+├── docker-compose.yml           # local: Postgres + API + frontend
+├── docker-compose.prod.yml      # producción: solo la API, con SQLite
+├── .env.prod.example
 └── .github/workflows/ci.yml
 ```

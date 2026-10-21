@@ -124,7 +124,9 @@ curl -I https://api-cuentasclaras.3rlabs.cl/api/docs     # 200
    `BACKEND_URL` se lee **durante el build**. Si se cambia, hay que hacer **Redeploy**.
 4. **Deploy.**
 5. **Settings → Domains** → agrega `cuentasclaras.3rlabs.cl`.
-6. En Cloudflare DNS, crea el registro que indique Vercel, normalmente `CNAME cuentasclaras → cname.vercel-dns.com`, en modo **"DNS only" (nube gris)**. Con proxy, Vercel no puede emitir su certificado.
+6. En Cloudflare DNS, crea el registro que indique Vercel: `CNAME cuentasclaras → <valor de Vercel>`, en modo **"DNS only" (nube gris)**. Con proxy, Vercel no puede emitir su certificado.
+   - Vercel ahora recomienda un destino propio del proyecto (en este caso `9c58f6c5473cdde3.vercel-dns-017.com`). El antiguo `cname.vercel-dns.com` sigue funcionando, pero muestra el aviso *DNS Change Recommended*.
+   - Si después de crear el registro el navegador muestra `DNS_PROBE_FINISHED_NXDOMAIN`, es caché: el DNS del proveedor guarda el "no existe" hasta ~30 min. Prueba con `ipconfig /flushdns`, `opera://net-internals/#dns` (o `chrome://net-internals/#dns`) o desde el celular con datos móviles.
 
 > Vercel Hobby es gratis solo para uso **no comercial**. Si 3R Labs cobra algún día por la app, hay que pasar a Vercel Pro.
 
