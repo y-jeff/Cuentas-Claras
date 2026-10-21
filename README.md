@@ -132,7 +132,9 @@ cd frontend && npm run lint && npm run typecheck && npm run build
 
 ## Deploy (3rlabs)
 
-Guía completa paso a paso: [docs/DEPLOY-3RLABS.md](docs/DEPLOY-3RLABS.md).
+**Recomendado:** servidor propio de 3R Labs con Docker y túnel de Cloudflare → [docs/SERVIDOR-3RLABS.md](docs/SERVIDOR-3RLABS.md).
+
+Alternativa en Render + Vercel (guía completa: [docs/DEPLOY-3RLABS.md](docs/DEPLOY-3RLABS.md)):
 
 | Pieza | Dónde | Dominio |
 |---|---|---|
