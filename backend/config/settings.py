@@ -70,6 +70,15 @@ DATABASES = {
     )
 }
 
+# En producción (servidor de 3R Labs) la base es SQLite: WAL deja leer mientras se escribe
+# e IMMEDIATE evita errores "database is locked" cuando dos requests escriben a la vez.
+if DATABASES["default"]["ENGINE"] == "django.db.backends.sqlite3":
+    DATABASES["default"]["OPTIONS"] = {
+        "transaction_mode": "IMMEDIATE",
+        "timeout": 20,
+        "init_command": "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;",
+    }
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
 ]
