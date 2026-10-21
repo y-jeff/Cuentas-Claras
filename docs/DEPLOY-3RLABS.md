@@ -189,15 +189,31 @@ Luego `https://api-cuentasclaras.3rlabs.cl/admin/` → **Users → Add user** pa
 
 ## 9. Actualizar
 
-- **Frontend:** se publica solo al hacer `git push` a `main`.
-- **API:**
+- **Frontend:** Vercel lo publica solo con cada `git push` a `main`.
+- **API:** el servidor revisa GitHub cada 5 minutos con [`scripts/actualizar-servidor.sh`](../scripts/actualizar-servidor.sh). Si hay commits nuevos, el script:
+  1. espera a que el **CI de GitHub Actions termine en verde** (si falla, no despliega);
+  2. trae los cambios con `git merge --ff-only`;
+  3. reconstruye el contenedor **solo si cambió `backend/` o `docker-compose.prod.yml`**.
+
+No hace falta abrir puertos ni guardar claves, porque el repo es público.
+
+```bash
+# crontab -e (root)
+*/5 * * * * /opt/cuentas-claras/scripts/actualizar-servidor.sh >> /var/log/cuentas-claras-actualizar.log 2>&1
+```
+
+Revisar qué pasó: `tail -n 20 /var/log/cuentas-claras-actualizar.log`
+
+Actualización manual, si hace falta:
 
 ```bash
 cd /opt/cuentas-claras
-git pull
+git pull --ff-only
 docker compose -f docker-compose.prod.yml up -d --build
 docker image prune -f
 ```
+
+> No edites archivos versionados directamente en el servidor: el script dejará de actualizar (`--ff-only` falla) hasta que se descarten con `git checkout -- .`. Los archivos `.env` y `data/` no están versionados, así que no se ven afectados.
 
 ---
 
@@ -226,4 +242,5 @@ Logs: `docker compose -f docker-compose.prod.yml logs -f api`
 - [ ] El dominio `cuentasclaras.3rlabs.cl` está verificado en Vercel, con el CNAME en "DNS only".
 - [ ] Las 8 pruebas de la sección 6 pasan.
 - [ ] El cron de respaldo está configurado y ya existe un primer respaldo manual.
+- [ ] El cron de actualización automática está configurado (sección 9).
 - [ ] Superusuario creado y cuentas de la familia dadas de alta.
